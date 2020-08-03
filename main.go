@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -32,21 +33,31 @@ func run() error {
 		return fmt.Errorf("no commands found")
 	}
 
-	// Prepare uniform command name width
-	cmdNameWidth := 0
-	for cmdName := range config.Commands {
-		if len(cmdName) > cmdNameWidth {
-			cmdNameWidth = len(cmdName)
+	// Collect command names
+	// also find max name length
+	cmdNames := make([]string, 0, len(config.Commands))
+	maxWidth := 0
+	for name := range config.Commands {
+		cmdNames = append(cmdNames, name)
+		if len(name) > maxWidth {
+			maxWidth = len(name)
 		}
 	}
 
+	// Sort command names to get same colors every time
+	sort.Strings(cmdNames)
+
+	// Start the commands
 	var wg sync.WaitGroup
-	for cmdName, args := range config.Commands {
-		cmdName := rightPad(cmdName, cmdNameWidth)
-		args := args
+	for i, name := range cmdNames {
+		color := getColor(i)
+		prettyName := rightPad(name, maxWidth)
+		prettyName += " \u258f"
+		prettyName = withColor(prettyName, color)
+		args := config.Commands[name]
 		wg.Add(1)
 		go func() {
-			err = runCommand(cmdName, args)
+			err = runCommand(prettyName, args)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -83,7 +94,7 @@ func runCommand(cmdName string, args []string) error {
 	go func() {
 		for {
 			line := <-linesCh
-			fmt.Print(cmdName, " | ", line)
+			fmt.Print(cmdName, line)
 		}
 	}()
 
