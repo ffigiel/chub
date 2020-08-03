@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 	"sync"
 )
 
@@ -27,9 +28,21 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if len(config.Commands) == 0 {
+		return fmt.Errorf("no commands found")
+	}
+
+	// Prepare uniform command name width
+	cmdNameWidth := 0
+	for cmdName := range config.Commands {
+		if len(cmdName) > cmdNameWidth {
+			cmdNameWidth = len(cmdName)
+		}
+	}
+
 	var wg sync.WaitGroup
 	for cmdName, args := range config.Commands {
-		cmdName := cmdName
+		cmdName := rightPad(cmdName, cmdNameWidth)
 		args := args
 		wg.Add(1)
 		go func() {
@@ -42,6 +55,10 @@ func run() error {
 	}
 	wg.Wait()
 	return nil
+}
+
+func rightPad(s string, width int) string {
+	return s + strings.Repeat(" ", width-len(s))
 }
 
 func runCommand(cmdName string, args []string) error {
