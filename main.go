@@ -3,23 +3,40 @@ package main
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"os"
+	"io/ioutil"
 	"os/exec"
 )
 
+type Config struct {
+	Command []string
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		return
-	}
-	err := run(os.Args[1:])
+	err := run()
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func run(args []string) error {
+func run() error {
+	config, err := getConfig()
+	if err != nil {
+		return err
+	}
+	err = runCommand(config.Command)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func runCommand(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("no command specified")
+	}
 	command := args[0]
 	params := args[1:]
 	cmd := exec.CommandContext(context.TODO(), command, params...)
@@ -47,6 +64,16 @@ func run(args []string) error {
 		return err
 	}
 	return nil
+}
+
+func getConfig() (Config, error) {
+	var c Config
+	configBytes, err := ioutil.ReadFile(".chub")
+	if err != nil {
+		return c, err
+	}
+	err = json.Unmarshal(configBytes, &c)
+	return c, err
 }
 
 func readLines(ch chan<- string, r io.Reader) {
