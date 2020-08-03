@@ -3,19 +3,13 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os/exec"
 	"sort"
 	"strings"
 	"sync"
 )
-
-type Config struct {
-	Commands map[string][]string
-}
 
 func main() {
 	err := run()
@@ -103,16 +97,6 @@ func runCommand(cmdName string, args []string) error {
 		return err
 	}
 	return nil
-}
-
-func getConfig() (Config, error) {
-	var c Config
-	configBytes, err := ioutil.ReadFile(".chub")
-	if err != nil {
-		return c, err
-	}
-	err = json.Unmarshal(configBytes, &c)
-	return c, err
 }
 
 func readLines(ch chan<- string, r io.Reader) {
