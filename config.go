@@ -11,7 +11,7 @@ type Config struct {
 
 func getConfig() (Config, error) {
 	var c Config
-	configBytes, err := ioutil.ReadFile(".chub")
+	configBytes, err := ioutil.ReadFile(".chub.json")
 	if err != nil {
 		return c, err
 	}
