@@ -8,10 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"sync"
 )
 
 type Config struct {
-	Command []string
+	Commands map[string][]string
 }
 
 func main() {
@@ -26,14 +27,24 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	err = runCommand(config.Command)
-	if err != nil {
-		return err
+	var wg sync.WaitGroup
+	for cmdName, args := range config.Commands {
+		cmdName := cmdName
+		args := args
+		wg.Add(1)
+		go func() {
+			err = runCommand(cmdName, args)
+			if err != nil {
+				fmt.Println(err)
+			}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 	return nil
 }
 
-func runCommand(args []string) error {
+func runCommand(cmdName string, args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("no command specified")
 	}
@@ -55,7 +66,7 @@ func runCommand(args []string) error {
 	go func() {
 		for {
 			line := <-linesCh
-			fmt.Print("chub | ", line)
+			fmt.Print(cmdName, " | ", line)
 		}
 	}()
 
