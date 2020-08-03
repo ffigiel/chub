@@ -9,9 +9,9 @@ type Config struct {
 	Commands map[string][]string
 }
 
-func getConfig() (Config, error) {
+func getConfig(path string) (Config, error) {
 	var c Config
-	configBytes, err := ioutil.ReadFile(".chub.json")
+	configBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return c, err
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -12,14 +13,39 @@ import (
 )
 
 func main() {
-	err := run()
+	// Process args
+	configPath := ".chub.json"
+	if len(os.Args) > 1 {
+		if os.Args[1] == "-h" || os.Args[1] == "--help" || len(os.Args) > 2 {
+			showHelp()
+			os.Exit(2)
+		}
+		configPath = os.Args[1]
+	}
+
+	err := run(configPath)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func run() error {
-	config, err := getConfig()
+func showHelp() {
+	fmt.Println(`Usage: chub [config_path]
+
+  Runs commands specified in the ` + "`config_path` " + `simultaneously.
+  ` + "`config_path` " + `defaults to ` + "`.chub.json`" + `
+
+  Example config:
+  {
+    "commands": {
+      "foo": ["echo", "this is foo"],
+      "bar": ["echo", "this is bar"]
+    }
+  }`)
+}
+
+func run(configPath string) error {
+	config, err := getConfig(configPath)
 	if err != nil {
 		return err
 	}
