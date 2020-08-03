@@ -112,6 +112,7 @@ func readLines(ch chan<- string, r io.Reader) {
 			return
 		} else if err != nil {
 			fmt.Println(err)
+			return
 		}
 		ch <- line
 	}
