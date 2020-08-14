@@ -80,7 +80,7 @@ func run(configPath string) error {
 		go func() {
 			err = runCommand(prettyName, args)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println(prettyName, withColor(err.Error(), color))
 			}
 			wg.Done()
 		}()
