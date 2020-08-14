@@ -7,9 +7,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 func main() {
@@ -69,22 +71,43 @@ func run(configPath string) error {
 	sort.Strings(cmdNames)
 
 	// Start the commands
+	commands := make([]*exec.Cmd, len(cmdNames))
+	for i, name := range cmdNames {
+		args := config.Commands[name]
+		commands[i] = runCommand(args)
+	}
+
+	// Track commands output
 	var wg sync.WaitGroup
 	for i, name := range cmdNames {
+		name := name
 		color := getColor(i)
 		prettyName := rightPad(name, maxWidth)
 		prettyName += " \u258f"
 		prettyName = withColor(prettyName, color)
-		args := config.Commands[name]
+		cmd := commands[i]
 		wg.Add(1)
 		go func() {
-			err = runCommand(prettyName, args)
+			defer wg.Done()
+			err = trackCommand(prettyName, cmd)
 			if err != nil {
-				fmt.Println(prettyName, withColor(err.Error(), color))
+				fmt.Println(prettyName + withColor(err.Error(), color))
 			}
-			wg.Done()
 		}()
 	}
+
+	// Wait for interrupt
+	shutdownSigCh := make(chan os.Signal, 1)
+	signal.Notify(shutdownSigCh, syscall.SIGINT, syscall.SIGTERM)
+	shutdownSig := <-shutdownSigCh
+	for _, cmd := range commands {
+		err := cmd.Process.Signal(shutdownSig)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// Wait for commands to finish
 	wg.Wait()
 	return nil
 }
@@ -93,10 +116,13 @@ func rightPad(s string, width int) string {
 	return s + strings.Repeat(" ", width-len(s))
 }
 
-func runCommand(cmdName string, args []string) error {
+func runCommand(args []string) *exec.Cmd {
 	command := args[0]
 	params := args[1:]
-	cmd := exec.CommandContext(context.TODO(), command, params...)
+	return exec.CommandContext(context.TODO(), command, params...)
+}
+
+func trackCommand(cmdName string, cmd *exec.Cmd) error {
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
