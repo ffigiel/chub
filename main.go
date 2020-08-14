@@ -90,6 +90,9 @@ func run(configPath string) error {
 		go func() {
 			defer wg.Done()
 			err = trackCommand(prettyName, cmd)
+			if err != nil && err.Error() == "signal: interrupt" {
+				err = nil
+			}
 			if err != nil {
 				fmt.Println(prettyName + withColor(err.Error(), color))
 			}
