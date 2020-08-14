@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 )
 
@@ -17,4 +18,16 @@ func getConfig(path string) (Config, error) {
 	}
 	err = json.Unmarshal(configBytes, &c)
 	return c, err
+}
+
+func (c Config) Validate() error {
+	if len(c.Commands) == 0 {
+		return fmt.Errorf("no commands found")
+	}
+	for name, args := range c.Commands {
+		if len(args) == 0 {
+			return fmt.Errorf("no command specified for `%s`", name)
+		}
+	}
+	return nil
 }

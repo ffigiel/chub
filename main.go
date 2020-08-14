@@ -49,8 +49,9 @@ func run(configPath string) error {
 	if err != nil {
 		return err
 	}
-	if len(config.Commands) == 0 {
-		return fmt.Errorf("no commands found")
+	err = config.Validate()
+	if err != nil {
+		return err
 	}
 
 	// Collect command names
@@ -93,9 +94,6 @@ func rightPad(s string, width int) string {
 }
 
 func runCommand(cmdName string, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("no command specified")
-	}
 	command := args[0]
 	params := args[1:]
 	cmd := exec.CommandContext(context.TODO(), command, params...)
